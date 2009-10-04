@@ -1,0 +1,40 @@
+#! /bin/sh
+#
+# openbmap-locator -- This shell script starts and stops the openbmap locator service
+#
+# chkconfig: 345 80 30
+# description: openbmap-locator is a service to provide location information based on GSM status
+# processname: openbmap-locator
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin
+NAME=openbmap-locator
+
+[ -f /etc/default/rcS ] && . /etc/default/rcS
+
+case "$1" in
+    start)
+        echo -n "Starting openmoko gsmpos daemon: "
+        start-stop-daemon --start --pidfile /var/run/${NAME}.pid --make-pidfile --background -x /usr/bin/openbmap-locator
+        if [ $? = 0 ]; then
+            echo "(ok)"
+        else
+            echo "(failed)"
+        fi
+        ;;
+    stop)
+        echo -n "Stopping freesmartphone.org gsmpos daemon: "
+        start-stop-daemon --stop --pidfile /var/run/${NAME}.pid --oknodo
+        rm -f /var/run/${NAME}.pid
+        echo "(done)"
+        ;;
+    restart|force-reload)
+        $0 stop
+        $0 start
+        ;;
+    *)
+        echo "Usage: /etc/init.d/web-manager {start|stop|restart|force-reload}"
+        exit 1
+        ;;
+esac
+
+exit 0

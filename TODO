@@ -1,0 +1,11 @@
+- openbmap-locator
+  - provide gypsy interface
+  - provide geosomething interface
+  - Automatic download of cell database
+  - Easy way to build a package
+  - Properly handle the start/stop commands
+    - Request/Release the GSM resource
+    - Start/stop the timer to read info from GSM
+      # It currently works all the time
+
+# vim:set sw=2 ts=2 et:
