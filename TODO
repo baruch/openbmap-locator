@@ -1,5 +1,6 @@
 - openbmap-locator
-  - provide gypsy interface
+  + provide gypsy interface
+  - providing missing gypsy satellite interface
   - provide geosomething interface
   - Automatic download of cell database
   - Easy way to build a package
@@ -7,5 +8,7 @@
     - Request/Release the GSM resource
     - Start/stop the timer to read info from GSM
       # It currently works all the time
+  - Improve calculation
+    - use neighbour cells in addition to the serving cell
 
 # vim:set sw=2 ts=2 et:
