@@ -93,12 +93,13 @@ namespace openBmap {
 			if (this.stmt == null)
 				return false;
 
+			debug("mcc=%d mnc=%d lac=%d cid=%d", mcc, mnc, lac, cid);
 			bool retval = false;
 
-			this.stmt.bind_int(0, mcc);
-			this.stmt.bind_int(1, mnc);
-			this.stmt.bind_int(2, lac);
-			this.stmt.bind_int(3, cid);
+			this.stmt.bind_int(1, mcc);
+			this.stmt.bind_int(2, mnc);
+			this.stmt.bind_int(3, lac);
+			this.stmt.bind_int(4, cid);
 
 			int ret = this.stmt.step();
 			if (ret == Sqlite.ROW) {
