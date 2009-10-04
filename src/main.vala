@@ -25,7 +25,7 @@ namespace openBmap {
 			gypsy = new GypsyProvider(loc);
 
 			try {
-				var conn = DBus.Bus.get(DBus.BusType. SESSION);
+				var conn = DBus.Bus.get(DBus.BusType.SYSTEM);
 				dynamic DBus.Object bus = conn.get_object(
 						"org.freedesktop.DBus",
 						"/org/freedesktop/DBus",
