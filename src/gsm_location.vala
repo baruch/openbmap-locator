@@ -32,6 +32,7 @@ namespace openBmap {
 	public class GSMLocation : Object {
 		private dynamic DBus.Object gsm_monitor_bus;
 		private dynamic DBus.Object gsm_network_bus;
+		private string dbpath;
 		private Sqlite.Database db;
 		private Sqlite.Statement stmt;
 
@@ -53,16 +54,7 @@ namespace openBmap {
 		}
 
 		public GSMLocation(string dbpath) {
-			int result = Database.open(dbpath, out this.db);
-			if (result != Sqlite.OK) {
-				debug("Error opening db file: %d", result);
-			}
-			if (this.db != null) {
-				result = this.db.prepare_v2("SELECT lat, lon FROM cells WHERE mcc=? AND mnc=? AND lac=? AND cid=?", -1, out this.stmt);
-				if (result != 0) {
-					debug("Error preparing SQL statement: %s", this.db.errmsg());
-				}
-			}
+			this.dbpath = dbpath;
 		}
 
 		public bool active { get; private set; default = false; }
@@ -79,6 +71,24 @@ namespace openBmap {
 
 		public signal void fix_changed();
 		public signal void position_changed();
+
+		public void openDB() {
+			int result = Database.open(dbpath, out this.db);
+			if (result != Sqlite.OK) {
+				debug("Error opening db file: %d", result);
+			}
+			if (this.db != null) {
+				result = this.db.prepare_v2("SELECT lat, lon FROM cells WHERE mcc=? AND mnc=? AND lac=? AND cid=?", -1, out this.stmt);
+				if (result != 0) {
+					debug("Error preparing SQL statement: %s", this.db.errmsg());
+				}
+			}
+		}
+
+		public void closeDB() {
+			this.stmt = null;
+			this.db = null;
+		}
 
 		/* Private */
 		private string? last_code;

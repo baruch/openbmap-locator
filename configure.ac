@@ -12,7 +12,7 @@ AM_MAINTAINER_MODE([enable])
 AC_PROG_CC
 AC_HEADER_STDC
 
-PKG_CHECK_MODULES(ALL, dbus-glib-1 >= 0.70 dbus-1 >= 0.70 gthread-2.0 sqlite3)
+PKG_CHECK_MODULES(ALL, dbus-glib-1 >= 0.70 dbus-1 >= 0.70 gthread-2.0 sqlite3 libsoup-2.4)
 AC_SUBST(ALL_CFLAGS)
 AC_SUBST(ALL_LIBS)
 

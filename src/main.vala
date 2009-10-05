@@ -19,9 +19,73 @@ namespace openBmap {
 	class Deamon {
 		GSMLocation loc;
 		GypsyProvider gypsy;
+		CellDBUpdate updater;
+		KeyFile conf;
+		bool conf_needs_saving;
+
+		private GLib.File get_conf_file() throws GLib.Error {
+			File f = File.new_for_path(Environment.get_home_dir());
+			f = f.get_child(".openBmap");
+			if (!f.query_exists(null)) {
+				bool success = f.make_directory(null);
+				if (!success)
+					debug("Create directory %s result is %s", f.get_path(), success.to_string());
+			}
+			return f.get_child("locator.conf");
+		}
+
+		private void load_conf() {
+			conf = new KeyFile();
+			try {
+				var f = get_conf_file();
+				conf.load_from_file(f.get_path(), KeyFileFlags.KEEP_COMMENTS);
+				conf_needs_saving = false;
+			} catch (KeyFileError e) {
+				debug("Key file error %s", e.message);
+			} catch (FileError e) {
+				debug("File Error %s", e.message);
+			} catch (GLib.Error e) {
+				debug("GLib Error %s", e.message);
+			}
+		}
+
+		private bool save_conf() {
+			try {
+				debug("Saving conf");
+				var f = get_conf_file();
+				size_t len;
+				GLib.Error e;
+				string data = this.conf.to_data(out len, out e);
+				if (e != null) {
+					debug("Error converting conf to string: %s", e.message);
+				} else {
+					f.replace_contents(data, len, null, false, FileCreateFlags.NONE, null, null);
+				}
+			} catch (GLib.Error e) {
+				debug("Error while saving conf: %s", e.message);
+			}
+			conf_needs_saving = false;
+			return false;
+		}
+
+		private void delayed_save_conf() {
+			debug("Delayed saving requested");
+			if (conf_needs_saving)
+				return; // We will do it shortly anyway
+
+			debug("Delayed saving initiated");
+			Timeout.add_seconds(1, save_conf);
+		}
 
 		private void init() {
+			load_conf();
+
 			loc = new GSMLocation("cell.db");
+			loc.openDB();
+
+			updater = new CellDBUpdate("cell.db", loc, conf);
+			updater.conf_needs_saving += delayed_save_conf;
+
 			gypsy = new GypsyProvider(loc);
 
 			try {
