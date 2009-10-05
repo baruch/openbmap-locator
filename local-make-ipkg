@@ -1,0 +1,19 @@
+#!/bin/bash
+
+DESTDIR=`pwd`/tmp
+rm -rf "$DESTDIR"
+mkdir "$DESTDIR"
+./configure --prefix=/usr --host=`uname -m`
+make install DESTDIR="$DESTDIR"
+
+CTLDIR="$DESTDIR"/CONTROL
+mkdir -p "$CTLDIR"
+cp openbmap-locator.control "$CTLDIR"/control
+
+cat > "$CTLDIR"/postinst << END
+update-rc.d openbmap-locator defaults
+exit 0
+END
+chmod a+x "$CTLDIR"/postinst
+
+ipkg-build -o root -g root "$DESTDIR"

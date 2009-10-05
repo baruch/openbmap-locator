@@ -5,6 +5,6 @@ Section: openmoko/applications
 Priority: optional
 Maintainer: <baruch@ev-en.org>
 Architecture: armv4t
-Homepage: http://example.com/
+Homepage: http://wiki.github.com/baruch/openbmap-locator
 Depends: dbus-glib-1, dbus-1, gthread-2.0, libsqlite3
-Source: ${SRC}
+Source: http://github.com/baruch/openbmap-locator

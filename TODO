@@ -3,7 +3,7 @@
   - providing missing gypsy satellite interface
   - provide geosomething interface
   + Automatic download of cell database
-  - Easy way to build a package
+  + Easy way to build a package
   - Properly handle the start/stop commands
     - Request/Release the GSM resource
     - Start/stop the timer to read info from GSM
