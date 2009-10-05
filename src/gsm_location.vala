@@ -141,6 +141,11 @@ namespace openBmap {
 			string cid_str = cid.get_string();
 			int cid_int = (int)cid_str.to_ulong(null, 16);
 
+			if (lac_int == 0 || cid_int == 0) {
+				debug("lac or cid of 0");
+				return;
+			}
+
 			double lat;
 			double lon;
 			bool found = get_cell_location(this.mcc, this.mnc, lac_int, cid_int, out lat, out lon);
