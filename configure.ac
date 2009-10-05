@@ -20,4 +20,6 @@ AC_OUTPUT([
 Makefile
 src/Makefile
 data/Makefile
+openbmap-locator.control
+local-make-ipkg
 ])

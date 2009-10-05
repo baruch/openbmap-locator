@@ -21,3 +21,6 @@ stamp-*
 src/openbmap-locator
 *.gir.vapi
 *.stamp
+tmp
+openbmap-locator.control
+local-make-ipkg
