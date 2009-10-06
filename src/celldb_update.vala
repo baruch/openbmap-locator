@@ -59,7 +59,7 @@ namespace openBmap {
 			Soup.Message msg = new Soup.Message("GET", "http://openbmap.ev-en.org/cell1.db");
 			try {
 				string last_modified = this.conf.get_string("download", "last_modified");
-				if (last_modified != null && last_modified.len() > 0)
+				if (last_modified != null && last_modified.len() > 0 && gsmloc.is_db_ok)
 					msg.request_headers.append("If-Modified-Since", last_modified);
 			} catch (KeyFileError e) {
 				debug("Error when getting last modified entry from conf: %s", e.message);

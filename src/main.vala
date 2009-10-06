@@ -23,7 +23,7 @@ namespace openBmap {
 		KeyFile conf;
 		bool conf_needs_saving;
 
-		private GLib.File get_conf_file() throws GLib.Error {
+		private GLib.File get_data_dir() throws GLib.Error {
 			File f = File.new_for_path(Environment.get_home_dir());
 			f = f.get_child(".openBmap");
 			if (!f.query_exists(null)) {
@@ -31,7 +31,15 @@ namespace openBmap {
 				if (!success)
 					debug("Create directory %s result is %s", f.get_path(), success.to_string());
 			}
-			return f.get_child("locator.conf");
+			return f;
+		}
+
+		private GLib.File get_conf_file() throws GLib.Error {
+			return get_data_dir().get_child("locator.conf");
+		}
+
+		private string get_celldb_filename() throws GLib.Error {
+			return get_data_dir().get_child("cell.db").get_path();
 		}
 
 		private void load_conf() {
@@ -80,10 +88,17 @@ namespace openBmap {
 		private void init() {
 			load_conf();
 
-			loc = new GSMLocation("cell.db");
+			string celldb_filename;
+			try {
+				celldb_filename = get_celldb_filename();
+			} catch (GLib.Error e) {
+				error("Error while getting cell db file: %s", e.message);
+				assert_not_reached();
+			}
+			loc = new GSMLocation(celldb_filename);
 			loc.openDB();
 
-			updater = new CellDBUpdate("cell.db", loc, conf);
+			updater = new CellDBUpdate(celldb_filename, loc, conf);
 			updater.conf_needs_saving += delayed_save_conf;
 
 			gypsy = new GypsyProvider(loc);

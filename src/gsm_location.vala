@@ -35,9 +35,12 @@ namespace openBmap {
 		private string dbpath;
 		private Sqlite.Database db;
 		private Sqlite.Statement stmt;
+		private uint timer_source_id;
 
 		construct {
-			Timeout.add_seconds(5, cb_timer);
+			this.timer_source_id = 0;
+			this.is_db_ok = false;
+
 			try {	
 				var dbus = DBus.Bus.get(DBus.BusType.SYSTEM);
 				this.gsm_network_bus = dbus.get_object("org.freesmartphone.ogsmd", "/org/freesmartphone/GSM/Device", "org.freesmartphone.GSM.Network");
@@ -62,32 +65,52 @@ namespace openBmap {
 		public int timestamp {get; private set; default = 0; }
 		public double lat { get; private set; default = 0.0; }
 		public double lon { get; private set; default = 0.0; }
+		public bool is_db_ok { get; private set; }
 
-		public bool is_active() { return active; }
+		public bool is_active() { return active && is_db_ok; }
 		public bool has_fix() { return fix; }
 
-		public bool start() { return true; }
-		public bool stop() { return true; }
+		public bool start() {
+			if (this.timer_source_id != 0)
+				return true;
+
+			this.timer_source_id = Timeout.add_seconds(5, cb_timer);
+			return true;
+		}
+		public bool stop() {
+			if (this.timer_source_id == 0)
+				return false;
+
+			Source.remove(this.timer_source_id);
+			this.timer_source_id = 0;
+			return true;
+		}
 
 		public signal void fix_changed();
 		public signal void position_changed();
 
 		public void openDB() {
+			this.is_db_ok = false;
 			int result = Database.open(dbpath, out this.db);
 			if (result != Sqlite.OK) {
 				debug("Error opening db file: %d", result);
+				return;
 			}
 			if (this.db != null) {
 				result = this.db.prepare_v2("SELECT lat, lon FROM cells WHERE mcc=? AND mnc=? AND lac=? AND cid=?", -1, out this.stmt);
 				if (result != 0) {
 					debug("Error preparing SQL statement: %s", this.db.errmsg());
+					return;
 				}
 			}
+
+			this.is_db_ok = true;
 		}
 
 		public void closeDB() {
 			this.stmt = null;
 			this.db = null;
+			this.is_db_ok = false;
 		}
 
 		/* Private */
