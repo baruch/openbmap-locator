@@ -1,4 +1,4 @@
-AC_INIT(openbmap-locator, 0.1, http://www.openbmap.org/)
+AC_INIT(openbmap-locator, 0.1, baruch@ev-en.org, openbmap-locator, http://wiki.github.com/baruch/openbmap-locator)
 AC_PREREQ(2.52)
 AC_CONFIG_SRCDIR(configure.ac)
 AC_ISC_POSIX

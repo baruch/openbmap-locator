@@ -8,10 +8,10 @@ make install DESTDIR="$DESTDIR"
 
 CTLDIR="$DESTDIR"/CONTROL
 mkdir -p "$CTLDIR"
-cp openbmap-locator.control "$CTLDIR"/control
+cp @PACKAGE_NAME@.control "$CTLDIR"/control
 
 cat > "$CTLDIR"/postinst << END
-update-rc.d openbmap-locator defaults
+update-rc.d @PACKAGE_NAME@ defaults
 exit 0
 END
 chmod a+x "$CTLDIR"/postinst

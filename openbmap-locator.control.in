@@ -1,10 +1,10 @@
-Package: openbmap-locator
-Version: 0.1
+Package: @PACKAGE_NAME@
+Version: @PACKAGE_VERSION@
 Description: Provide location based on GSM information
 Section: openmoko/applications
 Priority: optional
-Maintainer: <baruch@ev-en.org>
+Maintainer: @PACKAGE_BUGREPORT@
 Architecture: armv4t
-Homepage: http://wiki.github.com/baruch/openbmap-locator
+Homepage: @PACKAGE_URL@
 Depends: dbus-glib-1, dbus-1, gthread-2.0, libsqlite3
-Source: http://github.com/baruch/openbmap-locator
+Source: @PACKAGE_URL@
