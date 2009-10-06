@@ -10,10 +10,16 @@ CTLDIR="$DESTDIR"/CONTROL
 mkdir -p "$CTLDIR"
 cp @PACKAGE_NAME@.control "$CTLDIR"/control
 
+cat > "$CTLDIR"/preinst << END
+[ -e /etc/init.d/@PACKAGE_NAME@ ] && /etc/init.d/@PACKAGE_NAME@ stop
+END
+
 cat > "$CTLDIR"/postinst << END
 update-rc.d @PACKAGE_NAME@ defaults
+/etc/init.d/@PACKAGE_NAME@ start
 exit 0
 END
-chmod a+x "$CTLDIR"/postinst
+chmod a+x "$CTLDIR"/*inst
+chmod a+x "$DESTDIR"/etc/init.d/*
 
 ipkg-build -o root -g root "$DESTDIR"
