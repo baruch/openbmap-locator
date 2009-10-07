@@ -1,0 +1,5 @@
+#!/bin/sh
+
+export FSO_GPSD_GYPSY_SERVICE="org.openBmap.location"
+export FSO_GPSD_GYPSY_SERVER_PATH="/org/openBmap/location/Gypsy"
+fso-gpsd -S 2948 -n -N
