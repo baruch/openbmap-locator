@@ -1,6 +1,7 @@
 - openbmap-locator
   + provide gypsy interface
-  - providing missing gypsy satellite interface
+    - providing missing gypsy satellite interface
+    - Add time interface
   - provide geosomething interface
   + Automatic download of cell database
   + Easy way to build a package
