@@ -8,9 +8,10 @@
     - Request/Release the GSM resource
     + Start/stop the timer to read info from GSM
   - Improve calculation
-    - use neighbour cells in addition to the serving cell
-  - fso-gpsd interoperability
-    - Work with it in another port
+    + use neighbour cells in addition to the serving cell
+    - Use a better algorithm
+  * fso-gpsd interoperability
+    + Work with it in another port
     - Modify fso-gpsd to use us as a backup to the gps based gypsy interface
   + Log to file
 

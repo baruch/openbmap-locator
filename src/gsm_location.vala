@@ -29,6 +29,11 @@ namespace openBmap {
 		return !double_eq(x, y, diff);
 	}
 
+	struct CellData {
+		int lac;
+		int cid;
+	}
+
 	public class GSMLocation : Object {
 		private dynamic DBus.Object gsm_monitor_bus;
 		private dynamic DBus.Object gsm_network_bus;
@@ -36,6 +41,9 @@ namespace openBmap {
 		private Sqlite.Database db;
 		private Sqlite.Statement stmt;
 		private uint timer_source_id;
+		private bool got_serving_reply;
+		private bool got_neighbour_reply;
+		private List<CellData?> seen_cells;
 
 		construct {
 			this.timer_source_id = 0;
@@ -155,8 +163,10 @@ namespace openBmap {
 		}
 
 		private bool cb_timer() {
+			this.got_neighbour_reply = false;
+			this.got_serving_reply = false;
 			gsm_monitor_bus.GetServingCellInformation(get_serving_cell_reply);
-			//gsm_monitor_bus.GetNeighbourCells(get_neighbour_cell_reply);
+			gsm_monitor_bus.GetNeighbourCellInformation(get_neighbour_cell_reply);
 			return true;
 		}
 
@@ -179,41 +189,73 @@ namespace openBmap {
 				return;
 			}
 
-			double lat;
-			double lon;
-			bool found = get_cell_location(this.mcc, this.mnc, lac_int, cid_int, out lat, out lon);
-			if (!found) {
-				if (this.fix) {
-					this.fix = false;
-					fix_changed();
-				}
-			} else {
-				if (!this.fix) {
-					this.fix = true;
-					fix_changed();
+			CellData cell = CellData();
+			cell.lac = lac_int;
+			cell.cid = cid_int;
+
+			if (seen_cells == null)
+				seen_cells = new List<CellData?>();
+			seen_cells.prepend(cell);
+		}
+
+		private void do_fix_changed(bool fix) {
+			if (fix != this.fix) {
+				this.fix = fix;
+				fix_changed();
+			}
+		}
+
+		private void calc_position() {
+			if (!this.got_serving_reply || !this.got_neighbour_reply)
+				return;
+
+			double lat = 0.0;
+			double lon = 0.0;
+			int count = 0;
+			foreach (var cell in seen_cells) {
+				double cell_lat;
+				double cell_lon;
+				bool found = get_cell_location(this.mcc, this.mnc, cell.lac, cell.cid, out cell_lat, out cell_lon);
+				if (found) {
+					count++;
+					lat += cell_lat;
+					lon += cell_lon;
 				}
 			}
-			if (double_neq(this.lat, lat, DOUBLE_EQ_DIFF) || double_neq(this.lon, lon, DOUBLE_EQ_DIFF)) {
-				this.lat = lat;
-				this.lon = lon;
-				this.position_changed();
+			seen_cells = null;
+
+			do_fix_changed(count > 0);
+			if (count > 0) {
+				lat /= count;
+				lon /= count;
+				if (double_neq(this.lat, lat, DOUBLE_EQ_DIFF) || double_neq(this.lon, lon, DOUBLE_EQ_DIFF)) {
+					this.lat = lat;
+					this.lon = lon;
+					this.position_changed();
+				}
 			}
 		}
 
 		private void get_serving_cell_reply(HashTable<string, GLib.Value?> info, GLib.Error? e) {
-			if (e == null)
+			if (e == null) {
 				process_cell_info(true, info);
-			else
+			} else
 				debug("get serving cell error %d text %s", e.code, e.message);
+
+			this.got_serving_reply = true;
+			calc_position();
 		}
 
-		private void get_neighbour_cell_reply(HashTable<string, GLib.Value?>[] wrongdata, int len, GLib.Error? e) {
+		private void get_neighbour_cell_reply(HashTable<string, GLib.Value?>[] wrongdata, GLib.Error? e) {
 			if (e == null) {
-				for (int i = 0; i < len; i++) {
+				for (int i = 0; i < wrongdata.length; i++) {
 					process_cell_info(false, wrongdata[i]);
 				}
 			} else
 				debug("get neighbour cell error %d text %s", e.code, e.message);
+
+			this.got_neighbour_reply = true;
+			calc_position();
 		}
 
 		private void cb_get_status(HashTable<string, GLib.Value?> info) {

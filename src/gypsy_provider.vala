@@ -22,12 +22,17 @@ namespace openBmap {
 		FIX_3D
 	}
 
+	[DBus (name = "org.freedesktop.Gypsy.Server")]
+	public interface GypsyServer {
+		public abstract DBus.ObjectPath Create(string path) throws DBus.Error;
+	}
+
 	[DBus (name = "org.freedesktop.Gypsy.Device")]
 	public interface GypsyDevice {
 		public abstract bool GetConnectionStatus() throws DBus.Error;
 		public abstract int GetFixStatus() throws DBus.Error;
-		public abstract bool Start() throws DBus.Error;
-		public abstract bool Stop() throws DBus.Error;
+		public abstract void Start() throws DBus.Error;
+		public abstract void Stop() throws DBus.Error;
 
 		public signal void ConnectionChanged(bool status);
 		public signal void FixStatusChanged(int fix);
@@ -35,19 +40,19 @@ namespace openBmap {
 
 	[DBus (name = "org.freedesktop.Gypsy.Course")]
 	public interface GypsyCourse {
-		public abstract int GetCourse(out int timestamp, out double speed, out double direction, out double climb) throws DBus.Error;
+		public abstract void GetCourse(out int fields, out int timestamp, out double speed, out double direction, out double climb) throws DBus.Error;
 		public signal void CourseChanged(int fields, int timestamp, double speed, double direction, double climb);
 	}
 
 	[DBus (name = "org.freedesktop.Gypsy.Accuracy")]
 	public interface GypsyAccuracy {
-		public abstract int GetAccuracy(out double pdop, out double hdop, out double vdop) throws DBus.Error;
+		public abstract void GetAccuracy(out int fields, out double pdop, out double hdop, out double vdop) throws DBus.Error;
 		public signal void AccuracyChanged(int fields, double pdop, double hdop, double vdop);
 	}
 
 	[DBus (name = "org.freedesktop.Gypsy.Position")]
 	public interface GypsyPosition {
-		public abstract int GetPosition(out int timestamp, out double lat, out double lon, out double alt) throws DBus.Error;
+		public abstract void GetPosition(out int fields, out int timestamp, out double lat, out double lon, out double alt) throws DBus.Error;
 		public signal void PositionChanged(int fields, int timestamp, double lat, double lon, double alt);
 	}
 
@@ -59,7 +64,7 @@ namespace openBmap {
 	}
 	*/
 
-	public class GypsyProvider : Object, GypsyDevice, GypsyCourse, GypsyAccuracy, GypsyPosition {
+	public class GypsyProvider : Object, GypsyServer, GypsyDevice, GypsyCourse, GypsyAccuracy, GypsyPosition {
 		private GSMLocation loc;
 
 		public GypsyProvider(GSMLocation loc) {
@@ -74,19 +79,26 @@ namespace openBmap {
 			FixStatusChanged(GetFixStatus());
 
 			int fields;
+			try {
+				double pdop;
+				double hdop;
+				double vdop;
+				GetAccuracy(out fields, out pdop, out hdop, out vdop);
+				AccuracyChanged(fields, pdop, hdop, vdop);
+			} catch (DBus.Error e) {
+				debug("error when getting accuracy: %s", e.message);
+			}
 
-			double pdop;
-			double hdop;
-			double vdop;
-			fields = GetAccuracy(out pdop, out hdop, out vdop);
-			AccuracyChanged(fields, pdop, hdop, vdop);
-
-			int timestamp;
-			double speed;
-			double direction;
-			double climb;
-			fields = GetCourse(out timestamp, out speed, out direction, out climb);
-			CourseChanged(fields, timestamp, speed, direction, climb);
+			try {
+				int timestamp;
+				double speed;
+				double direction;
+				double climb;
+				GetCourse(out fields, out timestamp, out speed, out direction, out climb);
+				CourseChanged(fields, timestamp, speed, direction, climb);
+			} catch (DBus.Error e) {
+				debug("error when getting course: %s", e.message);
+			}
 		}
 
 		private void position_changed() {
@@ -96,7 +108,7 @@ namespace openBmap {
 			double alt;
 			int fields;
 			try {
-				fields = GetPosition(out timestamp, out lat, out lon, out alt);
+				GetPosition(out fields, out timestamp, out lat, out lon, out alt);
 			} catch (DBus.Error e) {
 				timestamp = 0;
 				lat = 0.0;
@@ -105,6 +117,11 @@ namespace openBmap {
 				fields = 0;
 			}
 			PositionChanged(fields, timestamp, lat, lon, alt);
+		}
+
+		/* Server */
+		public DBus.ObjectPath Create(string path) throws DBus.Error {
+			return new DBus.ObjectPath("/org/openBmap/location/Gypsy");
 		}
 
 		/* Device */
@@ -120,48 +137,50 @@ namespace openBmap {
 				return GypsyDeviceFixStatus.NONE;
 		}
 
-		public bool Start() throws DBus.Error {
-			return loc.start();
+		public void Start() throws DBus.Error {
+			loc.start();
 		}
 
-		public bool Stop() throws DBus.Error {
-			return loc.stop();
+		public void Stop() throws DBus.Error {
+			loc.stop();
 		}
 
 		/* Course */
-		public int GetCourse(out int timestamp, out double speed, out double direction, out double climb) throws DBus.Error {
+		public void GetCourse(out int fields, out int timestamp, out double speed, out double direction, out double climb) throws DBus.Error {
+			fields = 0;
 			timestamp = loc.timestamp;
 			speed = 0.0;
 			direction = 0.0;
 			climb = 0.0;
-			return 0;
 		}
 
 		/* Accuracy */
-		public int GetAccuracy(out double pdop, out double hdop, out double vdop) throws DBus.Error {
+		public void GetAccuracy(out int fields, out double pdop, out double hdop, out double vdop) throws DBus.Error {
 			double dop = 100.0;
-			if (loc.has_fix())
+			if (loc.has_fix()) {
+				fields = 3;
 				dop = 50.0;
+			} else
+				fields = 0;
 			pdop = dop;
 			hdop = dop;
 			vdop = 100.0; // We have no altitude information
-			return 3; // pdop and hdop valid
 		}
 
 		/* Position */
-		public int GetPosition(out int timestamp, out double lat, out double lon, out double alt) throws DBus.Error {
+		public void GetPosition(out int fields, out int timestamp, out double lat, out double lon, out double alt) throws DBus.Error {
 			if (loc.has_fix()) {
+				fields = 3;
 				timestamp = loc.timestamp;
 				lat = loc.lat;
 				lon = loc.lon;
 				alt = 0.0;
-				return 3;
 			} else {
+				fields = 0;
 				timestamp = 0;
 				lat = 0.0;
 				lon = 0.0;
 				alt = 0.0;
-				return 0;
 			}
 		}
 	}
