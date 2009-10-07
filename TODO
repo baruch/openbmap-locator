@@ -12,6 +12,6 @@
   - fso-gpsd interoperability
     - Work with it in another port
     - Modify fso-gpsd to use us as a backup to the gps based gypsy interface
-  - Log to file
+  + Log to file
 
 # vim:set sw=2 ts=2 et:
