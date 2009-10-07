@@ -37,6 +37,7 @@ namespace openBmap {
 	public class GSMLocation : Object {
 		private dynamic DBus.Object gsm_monitor_bus;
 		private dynamic DBus.Object gsm_network_bus;
+		private dynamic DBus.Object dbus_bus;
 		private string dbpath;
 		private Sqlite.Database db;
 		private Sqlite.Statement stmt;
@@ -49,19 +50,16 @@ namespace openBmap {
 			this.timer_source_id = 0;
 			this.is_db_ok = false;
 
+			connect_to_gsm();
 			try {	
 				var dbus = DBus.Bus.get(DBus.BusType.SYSTEM);
-				this.gsm_network_bus = dbus.get_object("org.freesmartphone.ogsmd", "/org/freesmartphone/GSM/Device", "org.freesmartphone.GSM.Network");
-				this.gsm_monitor_bus = dbus.get_object("org.freesmartphone.ogsmd", "/org/freesmartphone/GSM/Device", "org.freesmartphone.GSM.Monitor");
-
-				this.gsm_network_bus.GetStatus(get_status_reply);
-				this.gsm_network_bus.Status += cb_get_status;
+				this.dbus_bus = dbus.get_object("org.freedesktop.DBus", "/", "org.freedesktop.DBus");
+				this.dbus_bus.NameOwnerChanged += name_owner_changed;
 			} catch (DBus.Error e) {
 				debug("DBus error while getting interface: %s", e.message);
 			} catch (GLib.Error e) {
 				debug("GLib error while getting interface");
 			}
-
 		}
 
 		public GSMLocation(string dbpath) {
@@ -127,7 +125,28 @@ namespace openBmap {
 		private string? last_cid;
 		private int mcc;
 		private int mnc;
-		
+
+		private void name_owner_changed(dynamic DBus.Object obj, string x, string y, string z) {
+			debug("Name owner changed %s/%s/%s", x,y,z);
+			connect_to_gsm();
+		}
+
+		private void connect_to_gsm() {
+			debug("Connecting to GSM");
+			try {
+				var dbus = DBus.Bus.get(DBus.BusType.SYSTEM);
+				this.gsm_network_bus = dbus.get_object("org.freesmartphone.ogsmd", "/org/freesmartphone/GSM/Device", "org.freesmartphone.GSM.Network");
+				this.gsm_monitor_bus = dbus.get_object("org.freesmartphone.ogsmd", "/org/freesmartphone/GSM/Device", "org.freesmartphone.GSM.Monitor");
+
+				this.gsm_network_bus.Status += cb_get_status;
+				retry_get_status();
+			} catch (DBus.Error e) {
+				debug("DBus error while getting interface: %s", e.message);
+			} catch (GLib.Error e) {
+				debug("GLib error while getting interface");
+			}
+		}
+
 		private bool get_cell_location(int mcc, int mnc, int lac, int cid, out double lat, out double lon) {
 			lat = 0.0;
 			lon = 0.0;
@@ -258,7 +277,11 @@ namespace openBmap {
 			calc_position();
 		}
 
-		private void cb_get_status(HashTable<string, GLib.Value?> info) {
+		private void cb_get_status(dynamic DBus.Object obj, HashTable<string, GLib.Value?> info) {
+			do_get_status(info);
+		}
+
+		private void do_get_status(HashTable<string, GLib.Value?> info) {
 			string tmp = info.lookup("registration").get_string();
 			this.active = (tmp == "home" || tmp == "roaming");
 			if (!this.active) {
@@ -287,13 +310,20 @@ namespace openBmap {
 			}
 		}
 
+		private bool retry_get_status() {
+			this.gsm_network_bus.GetStatus(get_status_reply);
+			return false;
+		}
+
+
 		private void get_status_reply(HashTable<string, GLib.Value?> info, GLib.Error? e) {
 			if (e != null) {
 				debug("error in reply, code=%d msg=%s", e.code, e.message);
+				Timeout.add_seconds(5, retry_get_status);
 				return;
 			}
 
-			cb_get_status(info);
+			do_get_status(info);
 		}
 	}
 }
