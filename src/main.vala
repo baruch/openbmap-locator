@@ -22,6 +22,7 @@ namespace openBmap {
 		CellDBUpdate updater;
 		KeyFile conf;
 		bool conf_needs_saving;
+		DataOutputStream log_stream;
 
 		private GLib.File get_data_dir() throws GLib.Error {
 			File f = File.new_for_path(Environment.get_home_dir());
@@ -85,6 +86,36 @@ namespace openBmap {
 			Timeout.add_seconds(1, save_conf);
 		}
 
+		private void our_log_handler(string? log_domain, LogLevelFlags log_levels, string message) {
+			if (this.log_stream == null)
+				return;
+
+			try {
+				string t = Time.local(time_t()).to_string();
+				this.log_stream.put_string(t, null);
+				this.log_stream.put_string(" ", null);
+				if (log_domain == null)
+					log_domain = "UNKNOWN";
+				this.log_stream.put_string(log_domain, null);
+				this.log_stream.put_string(":", null);
+				this.log_stream.put_string(message, null);
+				this.log_stream.put_string("\n", null);
+			} catch (GLib.Error e) {
+				stderr.printf("Error writing to log file: %s", e.message);
+			}
+		}
+
+		private void init_log() {
+			try {
+				var log_file_stream = File.new_for_path("/var/log/openbmap-locator.log").append_to(FileCreateFlags.NONE, null);
+				this.log_stream = new DataOutputStream(log_file_stream);
+
+				Log.set_default_handler(our_log_handler);
+			} catch (GLib.Error e) {
+				debug("Error creating log file: %s", e.message);
+			}
+		}
+
 		private void init() {
 			load_conf();
 
@@ -92,7 +123,7 @@ namespace openBmap {
 			try {
 				celldb_filename = get_celldb_filename();
 			} catch (GLib.Error e) {
-				error("Error while getting cell db file: %s", e.message);
+				debug("Error while getting cell db file: %s", e.message);
 				assert_not_reached();
 			}
 			loc = new GSMLocation(celldb_filename);
@@ -129,6 +160,8 @@ namespace openBmap {
 		}
 
 		public void run(string[] args) {
+			init_log();
+
 			message("Starting openbmap-locator");
 			var loop = new MainLoop(null, false);
 			init();

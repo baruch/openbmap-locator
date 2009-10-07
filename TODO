@@ -6,12 +6,12 @@
   + Easy way to build a package
   - Properly handle the start/stop commands
     - Request/Release the GSM resource
-    - Start/stop the timer to read info from GSM
-      # It currently works all the time
+    + Start/stop the timer to read info from GSM
   - Improve calculation
     - use neighbour cells in addition to the serving cell
   - fso-gpsd interoperability
     - Work with it in another port
     - Modify fso-gpsd to use us as a backup to the gps based gypsy interface
+  - Log to file
 
 # vim:set sw=2 ts=2 et:
