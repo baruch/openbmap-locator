@@ -11,10 +11,13 @@ mkdir -p "$CTLDIR"
 cp @PACKAGE_NAME@.control "$CTLDIR"/control
 
 cat > "$CTLDIR"/preinst << END
+#!/bin/sh
 [ -e /etc/init.d/@PACKAGE_NAME@ ] && /etc/init.d/@PACKAGE_NAME@ stop
+exit 0
 END
 
 cat > "$CTLDIR"/postinst << END
+#!/bin/sh
 update-rc.d @PACKAGE_NAME@ defaults
 /etc/init.d/@PACKAGE_NAME@ start
 exit 0
