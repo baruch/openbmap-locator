@@ -2,4 +2,4 @@ This daemon provides location information based on the GSM cell info, it uses
 the FreeSmartPhone.org infrastructure to get the GSM cell information.
 
 Test commands:
-mdbus org.openBmap.location /org/openBmap/location/Gypsy org.freedesktop.Gypsy.Position.GetPosition
+mdbus -s org.openBmap.location /org/openBmap/location/Gypsy org.freedesktop.Gypsy.Position.GetPosition
